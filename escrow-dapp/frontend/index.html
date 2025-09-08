@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartContracts Brasil - Escrow de Pagamentos</title>
+    <link rel="stylesheet" href="src/assets/css/main.css">
+    <link rel="stylesheet" href="src/assets/css/aurora-cards.css">
+    <link rel="stylesheet" href="src/assets/css/forms.css">
+    <link rel="stylesheet" href="src/assets/css/pages.css">
+    <link rel="stylesheet" href="src/assets/css/animations.css">
+</head>
+<body>
+    <!-- Background Video (loop simples) -->
+    <video id="bg-video" muted playsinline aria-hidden="true" preload="auto" autoplay loop>
+        <source src="video_pronto_pingpong.mp4" type="video/mp4">
+    </video>
+    
+    <div id="app">
+        <!-- Header Component -->
+        <div id="header-component"></div>
+
+        <!-- Main Container -->
+        <div class="main-container">
+            <!-- Left Column: Formulário de Criação -->
+            <div class="left-column" id="left-content"></div>
+            
+            <!-- Right Column: Lista de Contratos -->
+            <div class="right-column" id="right-content"></div>
+        </div>
+
+
+        <!-- Modal de Expansão do Contrato -->
+        <div class="contract-modal" id="contractModal">
+            <div class="contract-modal-content">
+                <button class="modal-close" id="modalClose">×</button>
+                <div id="modalContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="src/services/wallet-service.js"></script>
+    <script src="src/services/contract-service.js"></script>
+    <script src="src/services/navigation-service.js"></script>
+    <script src="src/services/animation-service.js"></script>
+    <script src="src/components/header-component.js"></script>
+    <script src="src/components/summary-cards-component.js"></script>
+    <script src="src/components/contract-form-component.js"></script>
+    <script src="src/components/contracts-list-component.js"></script>
+    <script src="src/main.js"></script>
+    
+    <!-- Sem JS: vídeo já contém o efeito ping-pong e roda em loop -->
+    <script></script>
+</body>
+</html>
