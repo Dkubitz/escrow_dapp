@@ -8,7 +8,8 @@ class ContractFormComponent {
     }
 
     init() {
-        this.render();
+        // NÃO renderizar automaticamente - deixar para o main.js controlar
+        console.log('🔧 ContractFormComponent inicializado (sem auto-render)');
         this.bindEvents();
     }
 
@@ -19,7 +20,7 @@ class ContractFormComponent {
                 <!-- Botão de Navegação para Criação de Contratos -->
                 <div class="nav-button expand-button" onclick="window.contractFormComponent.handleCreateContract()">
                     <span class="nav-button-arrow">→</span>
-                    <span class="nav-button-icon">📝</span>
+                    <span class="nav-button-icon create-icon-nav"></span>
                     <div class="nav-button-title">Criar Novo Contrato</div>
                     <div class="nav-button-description">
                         Configure e crie um novo contrato de escrow com múltiplos marcos, 

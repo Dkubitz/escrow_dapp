@@ -6,6 +6,7 @@ class AnimationService {
     constructor() {
         this.isAnimating = false;
         this.animationQueue = [];
+        console.log('🔧 AnimationService inicializado (sem auto-init)');
     }
 
     /**

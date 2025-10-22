@@ -139,3 +139,25 @@
     border-color: transparent;
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
+
+/* ===== VERIFICAÇÃO USDC ===== */
+.usdc-actions {
+    margin: 15px 0;
+    text-align: center;
+}
+
+.usdc-actions .btn-secondary {
+    padding: 10px 20px;
+    font-size: 14px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.usdc-actions .btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}

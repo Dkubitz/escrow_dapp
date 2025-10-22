@@ -8,6 +8,8 @@ class ContractService {
     }
 
     init() {
+        // NÃO inicializar automaticamente - deixar para o main.js controlar
+        console.log('🔧 ContractService inicializado (sem auto-init)');
         this.loadMockContracts();
     }
 
@@ -57,13 +59,14 @@ class ContractService {
                 value: 45000,
                 clientAddress: '0x1a2b...3c4',
                 supplierAddress: '0x5d6e...8f0',
-                status: 'disputed',
+                status: 'active',
                 network: 'Polygon',
-                arbitrator: '0x7f8g...9h0',
-                disputedAmount: 22500,
+                currentMilestone: 2,
+                totalMilestones: 2,
+                nextPayment: 22500,
                 milestones: [
                     { id: 1, description: 'Entrega 50%', amount: 22500, status: 'completed' },
-                    { id: 2, description: 'Entrega 50%', amount: 22500, status: 'disputed' }
+                    { id: 2, description: 'Entrega 50%', amount: 22500, status: 'pending' }
                 ]
             }
         ];
@@ -119,13 +122,13 @@ class ContractService {
         const pendingMilestones = this.contracts.reduce((sum, contract) => {
             return sum + contract.milestones.filter(m => m.status === 'pending').length;
         }, 0);
-        const disputedContracts = this.contracts.filter(c => c.status === 'disputed').length;
+        const activeContracts = this.contracts.filter(c => c.status === 'active').length;
 
         return {
             totalContracts,
             totalValue: totalValue / 1000, // Em milhares
             pendingMilestones,
-            disputedContracts,
+            activeContracts,
             averageFee: 1.5
         };
     }

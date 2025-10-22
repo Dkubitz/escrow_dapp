@@ -8,21 +8,44 @@ class HeaderComponent {
     }
 
     init() {
-        this.render();
+        // NÃO renderizar automaticamente - deixar para o main.js controlar
+        console.log('🔧 HeaderComponent inicializado (sem auto-render)');
         this.bindEvents();
     }
 
     render() {
         const headerContainer = document.getElementById('header-component');
         if (headerContainer) {
+            // Verificar se há carteira conectada
+            const walletAddress = window.walletService?.account || window.walletService?.walletAddress;
+            const isConnected = window.walletService?.isConnected;
+            
+            // Mostrar endereço real ou botão de conectar
+            const walletDisplay = isConnected && walletAddress ? 
+                `${walletAddress.substring(0, 6)}...${walletAddress.substring(38)}` : 
+                'Conectar Carteira';
+            
             headerContainer.innerHTML = `
                 <div class="header">
-                    <p class="subtitle">Escrow de Pagamentos por Marcos - Contratos Inteligentes Arbitrados</p>
+                    <div class="header-left">
+                        <div class="deal-fi-brand">
+                            <div class="brand-text">
+                                <span class="deal-fi-name">Deal-Fi</span>
+                                <span class="polygon-powered">Powered by Polygon</span>
+                            </div>
+                        </div>
+                    </div>
                     <div class="wallet-status" id="walletStatus">
-                        🔗 Conectar Carteira
+                        <div class="wallet-address">
+                            <span class="address-label">${isConnected ? 'Carteira Conectada:' : 'Carteira:'}</span>
+                            <span class="address-value">${walletDisplay}</span>
+                        </div>
                     </div>
                 </div>
             `;
+            
+            // Re-bind events após renderizar
+            this.bindEvents();
         }
     }
 
@@ -34,6 +57,14 @@ class HeaderComponent {
                 window.walletService.connectWallet();
             });
         }
+    }
+    
+    /**
+     * Atualiza o header quando a carteira conectar/desconectar
+     */
+    updateWalletStatus() {
+        console.log('🔄 Atualizando status da carteira no header...');
+        this.render(); // Re-renderizar com dados atualizados
     }
 }
 

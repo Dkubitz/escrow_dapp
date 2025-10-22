@@ -9,16 +9,378 @@ class ContractsListComponent {
     }
 
     init() {
-        this.render();
+        // NÃO renderizar automaticamente - deixar para o main.js controlar
+        console.log('🔧 ContractsListComponent inicializado (sem auto-render)');
     }
 
-    render() {
+    async render() {
         const container = document.getElementById('right-content');
         if (container) {
             // Renderizar diretamente na coluna direita
             container.innerHTML = this.getContractsListHTML();
         }
         this.bindModalEvents();
+        
+        // NÃO carregar contratos automaticamente
+        // Eles serão carregados apenas quando necessário (ex: página de gerenciamento)
+        console.log('📋 ContractsListComponent renderizado (sem auto-carregamento)');
+    }
+
+    async loadRealContracts() {
+        try {
+            console.log('🔄 Carregando contratos reais...');
+            
+            if (window.realContractService && window.realContractService.contract) {
+                const contractData = await window.realContractService.getContractDetails();
+                console.log('✅ Dados do contrato real carregados:', contractData);
+                
+                // Criar estrutura de contrato para exibição
+                const realContract = {
+                    id: 'real-1',
+                    type: 'real',
+                    title: 'Contrato Real - Escrow USDC',
+                    value: parseFloat(contractData.amount),
+                    clientAddress: contractData.payer,
+                    supplierAddress: contractData.payee,
+                    status: contractData.deposited ? 'active' : 'pending',
+                    network: 'Polygon',
+                    currentMilestone: contractData.milestoneExecuted ? contractData.milestoneExecuted.filter(m => m).length : 0,
+                    totalMilestones: contractData.totalMilestones,
+                    nextPayment: contractData.milestoneAmounts && contractData.milestoneAmounts.length > 0 ? 
+                        parseFloat(contractData.milestoneAmounts[contractData.currentMilestone] || contractData.milestoneAmounts[0]) : 0,
+                    milestones: contractData.milestonePercentages ? contractData.milestonePercentages.map((percentage, index) => ({
+                        id: index + 1,
+                        description: `Marco ${index + 1}`,
+                        amount: parseFloat(contractData.milestoneAmounts[index] || 0),
+                        status: contractData.milestoneExecuted && contractData.milestoneExecuted[index] ? 'completed' : 'pending'
+                    })) : [],
+                    realData: contractData
+                };
+                
+                // Limpar interface anterior e atualizar com dados reais
+                this.updateContractsDisplay([realContract]);
+            } else {
+                console.log('⚠️ Nenhum contrato real encontrado, usando dados mockados');
+                // Manter dados mockados se não houver contrato real
+            }
+        } catch (error) {
+            console.error('❌ Erro ao carregar contratos reais:', error);
+        }
+    }
+
+    updateContractsDisplay(contracts) {
+        // Primeiro, vamos encontrar onde mostrar o contrato
+        let contractsList = document.getElementById('contractsList');
+        
+        // Se não encontrar, tentar outros elementos
+        if (!contractsList) {
+            contractsList = document.getElementById('right-content');
+        }
+        
+        if (!contractsList) {
+            console.log('⚠️ Elemento para mostrar contratos não encontrado');
+            return;
+        }
+        
+        if (contracts.length > 0) {
+            const contract = contracts[0];
+            
+            console.log('🎨 Renderizando contrato na interface:', contract);
+            
+            // CRIAR ELEMENTO PARA O CONTRATO (não substituir todo o conteúdo)
+            const contractElement = document.createElement('div');
+            contractElement.className = 'aurora-card';
+            contractElement.style.cssText = 'margin-bottom: 20px; width: 100%; max-width: none; cursor: pointer;';
+            contractElement.onclick = () => window.contractsListComponent.openRealContractModal(contract.id);
+            
+            contractElement.innerHTML = `
+                <div class="aurora-background"></div>
+                <div class="card-content">
+                    <div class="card-summary">
+                        <div class="card-header">🔗 ${contract.title}</div>
+                        <div class="card-value">${contract.value} USDC</div>
+                        <div class="card-subtext">Pagador: ${contract.clientAddress.substring(0, 6)}...${contract.clientAddress.substring(38)} | Recebedor: ${contract.supplierAddress.substring(0, 6)}...${contract.supplierAddress.substring(38)}</div>
+                    </div>
+                    <div class="card-details">
+                        <div class="details-grid">
+                            <div>
+                                <span>Status</span>
+                                <strong style="color: ${this.getStatusColor(contract.status)};">${this.getStatusText(contract.status)}</strong>
+                            </div>
+                            <div>
+                                <span>Rede</span>
+                                <strong>${contract.network}</strong>
+                            </div>
+                            <div>
+                                <span>Marco Atual</span>
+                                <strong>${contract.currentMilestone} de ${contract.totalMilestones}</strong>
+                            </div>
+                            <div>
+                                <span>Próximo Pagamento</span>
+                                <strong>${contract.nextPayment} USDC</strong>
+                            </div>
+                        </div>
+                        <div style="margin-top: 20px; text-align: center;">
+                            ${this.renderRealContractActionButtons(contract)}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // LIMPAR conteúdo anterior e ADICIONAR novo contrato
+            contractsList.innerHTML = '';
+            contractsList.appendChild(contractElement);
+            
+            console.log('✅ Contrato renderizado na interface!');
+        } else {
+            console.log('⚠️ Nenhum contrato para mostrar');
+            if (contractsList) {
+                // Só limpar se não houver contratos
+                contractsList.innerHTML = '<p class="no-contracts-message">Nenhum contrato encontrado.</p>';
+            }
+        }
+    }
+
+    renderRealContractActionButtons(contract) {
+        const userAddress = window.walletService?.account || '';
+        const isPayer = contract.realData?.payer?.toLowerCase() === userAddress.toLowerCase();
+        const isPayee = contract.realData?.payee?.toLowerCase() === userAddress.toLowerCase();
+        const isDeposited = contract.realData?.deposited;
+        
+        let buttons = [];
+        
+        if (!isDeposited) {
+            // Contrato não depositado ainda
+            if (isPayer) {
+                buttons.push(`<button class="btn-small btn-approve" style="margin-right: 10px;" onclick="window.contractsListComponent.depositRealContract('${contract.id}')">💳 Depositar USDC</button>`);
+            } else if (isPayee) {
+                buttons.push(`<button class="btn-small btn-info" style="margin-right: 10px;" onclick="window.contractsListComponent.checkContractStatus('${contract.id}')">📋 Verificar Status</button>`);
+            }
+        } else {
+            // Contrato depositado - ações ativas
+            if (isPayer || isPayee) {
+                buttons.push(`<button class="btn-small btn-release" style="margin-right: 10px;" onclick="window.contractsListComponent.releaseRealMilestone('${contract.id}')">✅ Aprovar Marco</button>`);
+                buttons.push(`<button class="btn-small btn-cancel" style="margin-right: 10px;" onclick="window.contractsListComponent.approveRealCancel('${contract.id}')">❌ Aprovar Cancelamento</button>`);
+            }
+            
+            if (isPayer) {
+                buttons.push(`<button class="btn-small btn-warning" onclick="window.contractsListComponent.refundRealContract('${contract.id}')">🔄 Refund</button>`);
+            } else if (isPayee) {
+                buttons.push(`<button class="btn-small btn-info" onclick="window.contractsListComponent.claimAfterDeadline('${contract.id}')">⏰ Reclamar Após Prazo</button>`);
+            }
+        }
+        
+        // Botão para ver detalhes
+        buttons.push(`<button class="btn-small btn-info" onclick="window.contractsListComponent.showContractDetails('${contract.id}')">🔍 Ver Detalhes</button>`);
+        
+        return buttons.join('');
+    }
+
+    async releaseRealMilestone(contractId) {
+        try {
+            console.log('💰 Liberando marco do contrato real...');
+            await window.realContractService.releaseMilestone(0);
+            alert('✅ Marco liberado com sucesso!');
+            // Recarregar dados
+            await this.loadRealContracts();
+        } catch (error) {
+            console.error('❌ Erro ao liberar marco:', error);
+            alert('❌ Erro ao liberar marco: ' + error.message);
+        }
+    }
+
+    async approveRealCancel(contractId) {
+        try {
+            console.log('❌ Aprovando cancelamento do contrato real...');
+            await window.realContractService.approveCancel();
+            alert('✅ Cancelamento aprovado!');
+            // Recarregar dados
+            await this.loadRealContracts();
+        } catch (error) {
+            console.error('❌ Erro ao aprovar cancelamento:', error);
+            alert('❌ Erro ao aprovar cancelamento: ' + error.message);
+        }
+    }
+
+    async depositRealContract(contractId) {
+        try {
+            console.log('💳 Depositando USDC no contrato real...');
+            // Aqui você pode implementar a lógica de depósito
+            alert('💳 Funcionalidade de depósito será implementada em breve!');
+        } catch (error) {
+            console.error('❌ Erro ao depositar:', error);
+            alert('❌ Erro ao depositar: ' + error.message);
+        }
+    }
+
+    async refundRealContract(contractId) {
+        try {
+            console.log('🔄 Fazendo refund do contrato real...');
+            await window.realContractService.refund();
+            alert('✅ Refund executado com sucesso!');
+            // Recarregar dados
+            await this.loadRealContracts();
+        } catch (error) {
+            console.error('❌ Erro ao fazer refund:', error);
+            alert('❌ Erro ao fazer refund: ' + error.message);
+        }
+    }
+
+    async checkContractStatus(contractId) {
+        try {
+            console.log('📋 Verificando status do contrato...');
+            const contractData = await window.realContractService.getContractDetails();
+            
+            alert(`📊 STATUS DO CONTRATO\n\n` +
+                  `💰 Valor: ${contractData.amount} USDC\n` +
+                  `💳 Depositado: ${contractData.deposited ? 'Sim' : 'Não'}\n` +
+                  `⏰ Prazo: ${contractData.deadline.toLocaleDateString('pt-BR')}\n` +
+                  `🎯 Marcos: ${contractData.totalMilestones}\n` +
+                  `💵 Saldo Restante: ${contractData.remainingAmount} USDC\n\n` +
+                  `📋 Status: ${contractData.deposited ? 'Ativo' : 'Aguardando Depósito'}`);
+        } catch (error) {
+            console.error('❌ Erro ao verificar status:', error);
+            alert('❌ Erro ao verificar status: ' + error.message);
+        }
+    }
+
+    async claimAfterDeadline(contractId) {
+        try {
+            console.log('⏰ Reclamando após deadline...');
+            await window.realContractService.claimAfterDeadline();
+            alert('✅ Reclamação executada com sucesso!');
+            await this.loadRealContracts();
+        } catch (error) {
+            console.error('❌ Erro ao reclamar após deadline:', error);
+            alert('❌ Erro ao reclamar: ' + error.message);
+        }
+    }
+
+    async showContractDetails(contractId) {
+        try {
+            console.log('🔍 Mostrando detalhes do contrato...');
+            const contractData = await window.realContractService.getContractDetails();
+            
+            const userAddress = window.walletService?.account || '';
+            const isPayer = contractData.payer.toLowerCase() === userAddress.toLowerCase();
+            const isPayee = contractData.payee.toLowerCase() === userAddress.toLowerCase();
+            
+            alert(`🔍 DETALHES COMPLETOS DO CONTRATO\n\n` +
+                  `📋 Informações Básicas:\n` +
+                  `• Endereço: ${window.realContractService.contractAddress}\n` +
+                  `• Pagador: ${contractData.payer}\n` +
+                  `• Recebedor: ${contractData.payee}\n` +
+                  `• Valor: ${contractData.amount} USDC\n` +
+                  `• Prazo: ${contractData.deadline.toLocaleString('pt-BR')}\n\n` +
+                  `💰 Status Financeiro:\n` +
+                  `• Depositado: ${contractData.deposited ? 'Sim' : 'Não'}\n` +
+                  `• Saldo Restante: ${contractData.remainingAmount} USDC\n` +
+                  `• Token: USDC (Polygon)\n\n` +
+                  `🎯 Marcos:\n` +
+                  `• Total: ${contractData.totalMilestones}\n` +
+                  `• Percentuais: ${contractData.milestonePercentages.join(', ')}%\n` +
+                  `• Valores: ${contractData.milestoneAmounts.join(', ')} USDC\n` +
+                  `• Executados: ${contractData.milestoneExecuted.map(e => e ? 'Sim' : 'Não').join(', ')}\n\n` +
+                  `👤 Seu Papel: ${isPayer ? 'PAGADOR' : isPayee ? 'RECEBEDOR' : 'OBSERVADOR'}`);
+        } catch (error) {
+            console.error('❌ Erro ao mostrar detalhes:', error);
+            alert('❌ Erro ao mostrar detalhes: ' + error.message);
+        }
+    }
+
+    showAvailableActions(contractData, userAddress) {
+        const isPayer = contractData.payer.toLowerCase() === userAddress.toLowerCase();
+        const isPayee = contractData.payee.toLowerCase() === userAddress.toLowerCase();
+        
+        let actions = [];
+        let status = '';
+        
+        if (!contractData.deposited) {
+            status = '⏳ Aguardando Depósito';
+            if (isPayer) {
+                actions.push('💳 Depositar USDC no contrato');
+                actions.push('❌ Cancelar contrato (se possível)');
+            } else if (isPayee) {
+                actions.push('⏳ Aguardar pagador depositar USDC');
+                actions.push('📋 Verificar status do contrato');
+            }
+        } else {
+            status = '💰 Contrato Ativo';
+            if (isPayer) {
+                actions.push('✅ Aprovar liberação de marcos');
+                actions.push('❌ Aprovar cancelamento (se necessário)');
+                actions.push('🔄 Fazer refund (se permitido)');
+            } else if (isPayee) {
+                actions.push('✅ Aprovar liberação de marcos');
+                actions.push('💰 Receber pagamentos liberados');
+                actions.push('❌ Aprovar cancelamento (se necessário)');
+                actions.push('⏰ Reclamar após deadline (se expirado)');
+            }
+        }
+        
+        const actionsList = actions.map(action => `• ${action}`).join('\n');
+        
+        alert(`🎯 AÇÕES DISPONÍVEIS PARA VOCÊ\n\n` +
+              `📋 Status: ${status}\n\n` +
+              `👤 Seu papel: ${isPayer ? 'PAGADOR' : 'RECEBEDOR'}\n\n` +
+              `🎬 Ações disponíveis:\n${actionsList}\n\n` +
+              `📊 Detalhes do contrato:\n` +
+              `• Pagador: ${contractData.payer.substring(0, 6)}...${contractData.payer.substring(38)}\n` +
+              `• Recebedor: ${contractData.payee.substring(0, 6)}...${contractData.payee.substring(38)}\n` +
+              `• Valor: ${contractData.amount} USDC\n` +
+              `• Prazo: ${contractData.deadline.toLocaleDateString('pt-BR')}\n` +
+              `• Marcos: ${contractData.totalMilestones}\n\n` +
+              `🔗 Contrato carregado na interface!`);
+    }
+
+    async forceUpdateInterface() {
+        try {
+            console.log('🔄 Forçando atualização da interface...');
+            
+            // Recarregar contratos reais
+            await this.loadRealContracts();
+            
+            // Verificar se há contratos carregados
+            if (window.realContractService && window.realContractService.contract) {
+                const contractData = await window.realContractService.getContractDetails();
+                console.log('📊 Dados para interface:', contractData);
+                
+                // Criar estrutura de contrato para exibição
+                const realContract = {
+                    id: 'real-1',
+                    type: 'real',
+                    title: 'Contrato Real - Escrow USDC',
+                    value: parseFloat(contractData.amount),
+                    clientAddress: contractData.payer,
+                    supplierAddress: contractData.payee,
+                    status: contractData.deposited ? 'active' : 'pending',
+                    network: 'Polygon',
+                    currentMilestone: contractData.milestoneExecuted ? contractData.milestoneExecuted.filter(m => m).length : 0,
+                    totalMilestones: contractData.totalMilestones,
+                    nextPayment: contractData.milestoneAmounts && contractData.milestoneAmounts.length > 0 ? 
+                        parseFloat(contractData.milestoneAmounts[contractData.currentMilestone] || contractData.milestoneAmounts[0]) : 0,
+                    realData: contractData
+                };
+                
+                // Limpar interface e atualizar com novo contrato
+                this.updateContractsDisplay([realContract]);
+                
+                alert('✅ Interface atualizada!\n\n' +
+                      'Contrato carregado na interface com todas as ações disponíveis.');
+            } else {
+                alert('⚠️ Nenhum contrato conectado!\n\n' +
+                      'Use primeiro o botão "Conectar MetaMask e Buscar Contratos"');
+            }
+            
+        } catch (error) {
+            console.error('❌ Erro ao forçar atualização:', error);
+            alert('❌ Erro ao atualizar interface: ' + error.message);
+        }
+    }
+
+    openRealContractModal(contractId) {
+        // Implementar modal para contrato real
+        alert('🔗 Modal do contrato real será implementado em breve!');
     }
 
     bindModalEvents() {
@@ -48,17 +410,85 @@ class ContractsListComponent {
 
     getContractsListHTML() {
         return `
-                            <!-- Botão de Navegação para Lista de Contratos -->
-                <div class="nav-button expand-button" onclick="window.contractsListComponent.handleManageContracts()">
-                    <span class="nav-button-arrow">→</span>
-                    <span class="nav-button-icon">📋</span>
-                    <div class="nav-button-title">Gerenciar Contratos</div>
-                    <div class="nav-button-description">
-                        Visualize, gerencie e acompanhe todos os seus contratos de escrow ativos, 
-                        com filtros por status e ações de aprovação e liberação de pagamentos.
-                    </div>
+            <!-- Botão de Navegação para Lista de Contratos -->
+            <div class="nav-button expand-button" onclick="window.contractsListComponent.handleManageContracts()">
+                <span class="nav-button-arrow">→</span>
+                <span class="nav-button-icon manage-icon-nav"></span>
+                <div class="nav-button-title">Gerenciar Contratos</div>
+                <div class="nav-button-description">
+                    Visualize, gerencie e acompanhe todos os seus contratos de escrow ativos, 
+                    com filtros por status e ações de aprovação e liberação de pagamentos.
                 </div>
+            </div>
+            
+            <!-- Botão para Conectar e Buscar Contratos Reais -->
+            <div class="nav-button expand-button" onclick="window.contractsListComponent.connectAndLoadRealContracts()" style="margin-top: 20px; background: linear-gradient(135deg, #10b981, #059669);">
+                <span class="nav-button-arrow">🔗</span>
+                <span class="nav-button-icon manage-icon-nav"></span>
+                <div class="nav-button-title">Conectar MetaMask e Buscar Contratos</div>
+                <div class="nav-button-description">
+                    Conecte sua carteira MetaMask e busque automaticamente todos os seus contratos de escrow na blockchain.
+                </div>
+            </div>
+            
+            <!-- Botão para Forçar Atualização da Interface -->
+            <div class="nav-button expand-button" onclick="window.contractsListComponent.forceUpdateInterface()" style="margin-top: 20px; background: linear-gradient(135deg, #667eea, #764ba2);">
+                <span class="nav-button-arrow">🔄</span>
+                <span class="nav-button-icon manage-icon-nav"></span>
+                <div class="nav-button-title">🔄 Atualizar Interface</div>
+                <div class="nav-button-description">
+                    Força a atualização da interface para mostrar contratos carregados.
+                </div>
+            </div>
         `;
+    }
+
+    async connectAndLoadRealContracts() {
+        try {
+            console.log('🔗 Conectando com MetaMask e buscando contratos...');
+            
+            // Conectar com MetaMask
+            if (!window.ethereum) {
+                alert('❌ MetaMask não detectado! Por favor, instale o MetaMask.');
+                return;
+            }
+
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const userAddress = accounts[0];
+            console.log('✅ Carteira conectada:', userAddress);
+
+            // Inicializar RealContractService
+            if (window.realContractService) {
+                await window.realContractService.init();
+                
+                // Buscar contratos do usuário
+                const found = await window.realContractService.findUserContracts(userAddress);
+                
+                if (found) {
+                    console.log('✅ Contratos do usuário encontrados!');
+                    
+                    // Carregar dados do contrato
+                    const contractData = await window.realContractService.getContractDetails();
+                    console.log('📊 Dados do contrato:', contractData);
+                    
+                // Atualizar interface
+                await this.loadRealContracts();
+                
+                // Mostrar ações disponíveis
+                this.showAvailableActions(contractData, userAddress);
+                } else {
+                    alert('⚠️ Nenhum contrato encontrado para este endereço.\n\n' +
+                          `Endereço: ${userAddress}\n` +
+                          'Verifique se você é o criador de algum contrato de escrow.');
+                }
+            } else {
+                alert('❌ RealContractService não encontrado!');
+            }
+            
+        } catch (error) {
+            console.error('❌ Erro ao conectar e buscar contratos:', error);
+            alert('❌ Erro ao conectar: ' + error.message);
+        }
     }
 
     renderContractCards() {
@@ -145,7 +575,8 @@ class ContractsListComponent {
             pending: '#f59e0b',
             approved: '#10b981',
             released: '#667eea',
-            disputed: '#ef4444'
+            active: '#667eea',
+            cancelled: '#ef4444'
         };
         return colors[status] || '#667eea';
     }
@@ -155,7 +586,8 @@ class ContractsListComponent {
             pending: '⏳ Aguardando Aprovação',
             approved: '✅ Aprovado',
             released: '💰 Liberado',
-            disputed: '⚖️ Em Disputa'
+            active: '🔄 Ativo',
+            cancelled: '❌ Cancelado'
         };
         return texts[status] || 'Desconhecido';
     }
@@ -163,7 +595,8 @@ class ContractsListComponent {
     getAmountLabel(contract) {
         if (contract.status === 'approved') return 'Próximo Pagamento';
         if (contract.status === 'pending') return 'Valor Pendente';
-        if (contract.status === 'disputed') return 'Valor em Disputa';
+        if (contract.status === 'active') return 'Valor Ativo';
+        if (contract.status === 'cancelled') return 'Valor Cancelado';
         return 'Valor';
     }
 
@@ -174,8 +607,11 @@ class ContractsListComponent {
         if (contract.status === 'pending' && contract.pendingAmount) {
             return `R$ ${contract.pendingAmount.toLocaleString('pt-BR')}`;
         }
-        if (contract.status === 'disputed' && contract.disputedAmount) {
-            return `R$ ${contract.disputedAmount.toLocaleString('pt-BR')}`;
+        if (contract.status === 'active' && contract.nextPayment) {
+            return `R$ ${contract.nextPayment.toLocaleString('pt-BR')}`;
+        }
+        if (contract.status === 'cancelled') {
+            return 'Reembolsado';
         }
         return 'N/A';
     }
@@ -184,17 +620,17 @@ class ContractsListComponent {
         if (contract.status === 'approved') {
             return `
                 <button class="btn-small btn-release" style="margin-right: 10px;" onclick="window.contractsListComponent.releasePayment(${contract.id})">💰 Liberar Pagamento</button>
-                <button class="btn-small btn-dispute" onclick="window.contractsListComponent.openDispute(${contract.id})">⚖️ Abrir Disputa</button>
+                <button class="btn-small btn-cancel" onclick="window.contractsListComponent.cancelContract(${contract.id})">❌ Cancelar Contrato</button>
             `;
         } else if (contract.status === 'pending') {
             return `
                 <button class="btn-small btn-approve" style="margin-right: 10px;" onclick="window.contractsListComponent.approveMilestone(${contract.id})">✅ Aprovar Marco</button>
-                <button class="btn-small btn-dispute" onclick="window.contractsListComponent.openDispute(${contract.id})">⚖️ Abrir Disputa</button>
+                <button class="btn-small btn-cancel" onclick="window.contractsListComponent.cancelContract(${contract.id})">❌ Cancelar Contrato</button>
             `;
-        } else if (contract.status === 'disputed') {
+        } else if (contract.status === 'active') {
             return `
-                <button class="btn-small btn-approve" style="margin-right: 10px;" onclick="window.contractsListComponent.viewArbitrator(${contract.id})">👨‍⚖️ Ver Árbitro</button>
-                <button class="btn-small btn-dispute" onclick="window.contractsListComponent.viewDetails(${contract.id})">📋 Ver Detalhes</button>
+                <button class="btn-small btn-approve" style="margin-right: 10px;" onclick="window.contractsListComponent.approveMilestone(${contract.id})">✅ Aprovar Marco</button>
+                <button class="btn-small btn-cancel" onclick="window.contractsListComponent.cancelContract(${contract.id})">❌ Cancelar Contrato</button>
             `;
         }
         return '';
@@ -300,16 +736,12 @@ class ContractsListComponent {
         alert(`✅ Aprovando marco para contrato ${contractId}...`);
     }
 
-    async openDispute(contractId) {
-        alert(`⚖️ Abrindo disputa para contrato ${contractId}...`);
-    }
-
-    async viewArbitrator(contractId) {
-        alert(`👨‍⚖️ Visualizando árbitro do contrato ${contractId}...`);
-    }
-
-    async viewDetails(contractId) {
-        alert(`📋 Visualizando detalhes do contrato ${contractId}...`);
+    async cancelContract(contractId) {
+        const confirmed = confirm(`❌ Tem certeza que deseja cancelar o contrato ${contractId}?\n\nO valor em escrow será reembolsado para sua carteira.`);
+        if (confirmed) {
+            alert(`❌ Cancelando contrato ${contractId} e reembolsando valor...`);
+            // Aqui seria chamada a função do smart contract para cancelar e reembolsar
+        }
     }
 
     // Métodos do Modal
