@@ -144,6 +144,10 @@ class NavigationService {
      * Renderiza a página inicial
      */
     renderHomePage(container) {
+        // Parar polling ao sair da página de gerenciamento
+        if (window.contractPollingService) {
+            window.contractPollingService.stopPolling();
+        }
         // Sempre renderizar com card de notificação inicialmente
         container.innerHTML = `
             <div class="home-content">
@@ -246,6 +250,10 @@ class NavigationService {
      * Renderiza a página de criação de contratos
      */
     renderCreatePage(container) {
+        // Parar polling ao sair da página de gerenciamento
+        if (window.contractPollingService) {
+            window.contractPollingService.stopPolling();
+        }
         // Usar o formulário avançado do create-contract-form.js
         container.innerHTML = window.createContractForm.render();
         
@@ -255,34 +263,145 @@ class NavigationService {
 
     /**
      * Renderiza a página de gerenciamento de contratos
+     * ATUALIZADO: Usa sistema de estados
      */
     async renderManagePage(container) {
         container.innerHTML = `
-            <div class="manage-contracts-page">
-                <!-- Botão Voltar no canto superior esquerdo -->
-                <div class="top-back-button">
+            <div class="manage-contracts-page" style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+                <!-- Barra de Ações no Topo -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
                     <button class="back-btn-top" onclick="window.navigationService.restoreHomePage()">
                         ← Voltar
                     </button>
+                    
+                    <button class="back-btn-top" 
+                        onclick="window.realContractService.showAddContractModal('${window.walletService?.account || ''}')" 
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(102,126,234,0.4)';"
+                        onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 15px rgba(102,126,234,0.3)';">
+                        🔍 Buscar Contrato
+                    </button>
                 </div>
                 
-                
-                <div class="contracts-list" id="contractsList">
-                    <!-- Contratos reais serão renderizados aqui -->
-                    <div class="loading-message">
-                        <p>🔄 Carregando seus contratos...</p>
-                        </div>
-                        </div>
-                        </div>
+                <!-- Container para UI baseada em estado -->
+                <div id="state-based-container">
+                    <div style="text-align: center; padding: 60px 20px;">
+                        <p style="font-size: 18px; color: #666;">🔄 Carregando estado do contrato...</p>
+                    </div>
+                </div>
+            </div>
         `;
 
-        // Carregar contratos reais APENAS quando entrar na página de gerenciamento
-        await this.loadRealContractsForManage();
-        console.log('📋 Página de gerenciamento carregada com contratos reais');
+        // Carregar e renderizar usando sistema de estados
+        await this.loadStateBasedUI();
+        console.log('📋 Página de gerenciamento carregada com sistema de estados');
     }
 
     /**
-     * Carrega contratos reais para a página de gerenciamento
+     * Carrega UI baseada em estado (NOVO SISTEMA)
+     */
+    async loadStateBasedUI() {
+        try {
+            console.log('🔄 Carregando UI baseada em estado...');
+            
+            const container = document.getElementById('state-based-container');
+            if (!container) {
+                console.error('❌ Container state-based-container não encontrado');
+                return;
+            }
+            
+            // Verificar se há contrato conectado
+            if (!window.realContractService || !window.realContractService.contract) {
+                console.log('⚠️ Nenhum contrato encontrado');
+                container.innerHTML = `
+                    <div class="no-contracts">
+                        <div class="no-contracts-icon">📋</div>
+                        <h3>Nenhum contrato encontrado</h3>
+                        <p>Conecte sua carteira ou adicione um contrato existente.</p>
+                        <div class="no-contracts-actions">
+                            <button class="btn-primary" onclick="window.realContractService.showAddContractModal('${window.walletService?.account || ''}')">
+                                🔗 Conectar Contrato Existente
+                            </button>
+                            <button class="btn-secondary" onclick="window.navigationService.navigateTo('create')">
+                                ➕ Criar Novo Contrato
+                            </button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Obter dados do contrato
+            console.log('📍 [loadStateBasedUI] Contrato ativo:', window.realContractService.contractAddress);
+            
+            const contractData = await window.realContractService.getContractDetails();
+            const userAddress = window.walletService?.account || '';
+            
+            console.log('📊 [loadStateBasedUI] Dados do contrato:', contractData);
+            console.log('👤 [loadStateBasedUI] Usuário:', userAddress);
+            console.log('💰 [loadStateBasedUI] Valor do contrato:', contractData.amount, 'USDC');
+            
+            // Determinar estado usando ContractStateService
+            const state = window.contractStateService.determineState(
+                contractData,
+                userAddress
+            );
+            
+            console.log('✅ Estado determinado:', state);
+            
+            // Renderizar UI usando StateBasedUIComponent
+            window.stateBasedUIComponent.render(state, contractData);
+            
+            // Iniciar polling para atualizações automáticas
+            if (window.contractPollingService) {
+                window.contractPollingService.startPolling();
+            }
+            
+        } catch (error) {
+            console.error('❌ Erro ao carregar UI baseada em estado:', error);
+            
+            const container = document.getElementById('state-based-container');
+            if (container) {
+                container.innerHTML = `
+                    <div class="error-message" style="
+                        text-align: center;
+                        padding: 60px 20px;
+                        background: rgba(239,68,68,0.1);
+                        border: 2px solid rgba(239,68,68,0.3);
+                        border-radius: 20px;
+                        margin: 20px;
+                    ">
+                        <div style="font-size: 48px; margin-bottom: 20px;">❌</div>
+                        <h3 style="color: #ef4444; margin-bottom: 15px;">Erro ao Carregar</h3>
+                        <p style="color: #666; margin-bottom: 25px;">${error.message}</p>
+                        <button class="btn-primary" onclick="window.navigationService.loadStateBasedUI()">
+                            🔄 Tentar Novamente
+                        </button>
+                    </div>
+                `;
+            }
+        }
+    }
+    
+    /**
+     * Recarrega a página atual (usado após ações)
+     */
+    async refreshCurrentPage() {
+        console.log('🔄 Recarregando página atual:', this.currentPage);
+        
+        if (this.currentPage === 'manage') {
+            // Verificar se container existe antes de atualizar
+            const container = document.getElementById('state-based-container');
+            if (container) {
+                await this.loadStateBasedUI();
+            } else {
+                console.warn('⚠️ Container ainda não existe, ignorando refresh');
+            }
+        }
+    }
+    
+    /**
+     * MÉTODO ANTIGO - Mantido por compatibilidade
+     * @deprecated Use loadStateBasedUI() em vez disso
      */
     async loadRealContractsForManage() {
         try {
@@ -324,7 +443,67 @@ class NavigationService {
                 let statusText = '';
                 let statusColor = '';
                 
-                if (!contractData.deposited) {
+                // Debug: Verificar estado do contrato
+                console.log('🔍 Estado do contrato para renderização:', {
+                    platformFeePaid: contractData.platformFeePaid,
+                    confirmedPayer: contractData.confirmedPayer,
+                    confirmedPayee: contractData.confirmedPayee,
+                    deposited: contractData.deposited,
+                    isPayer: isPayer,
+                    isPayee: isPayee
+                });
+                
+                // Verificar se taxa de plataforma foi paga
+                if (!contractData.platformFeePaid) {
+                    statusText = '⚠️ Taxa de Plataforma Pendente';
+                    statusColor = '#ef4444';
+                    
+                    actionsHTML = `
+                        <button class="btn-primary" onclick="window.navigationService.payPlatformFee()">
+                            💳 Pagar Taxa (1 USDC)
+                        </button>
+                    `;
+                }
+                // Verificar se confirmações estão pendentes
+                else if (!contractData.confirmedPayer && isPayer) {
+                    statusText = '⏳ Aguardando Confirmação do Payer';
+                    statusColor = '#f59e0b';
+                    
+                    actionsHTML = `
+                        <button class="btn-primary" onclick="window.navigationService.confirmPayer()">
+                            ✅ Confirmar Payer
+                        </button>
+                    `;
+                }
+                else if (!contractData.confirmedPayee && isPayee) {
+                    statusText = '⏳ Aguardando Confirmação do Payee';
+                    statusColor = '#f59e0b';
+                    
+                    actionsHTML = `
+                        <button class="btn-primary" onclick="window.navigationService.confirmPayee()">
+                            ✅ Confirmar Payee
+                        </button>
+                    `;
+                }
+                else if (!contractData.confirmedPayer || !contractData.confirmedPayee) {
+                    // Mostrar status de confirmação pendente para qualquer usuário
+                    if (!contractData.confirmedPayer && !contractData.confirmedPayee) {
+                        statusText = '⏳ Aguardando Confirmações (Payer e Payee)';
+                    } else if (!contractData.confirmedPayer) {
+                        statusText = '⏳ Aguardando Confirmação do Payer';
+                    } else if (!contractData.confirmedPayee) {
+                        statusText = '⏳ Aguardando Confirmação do Payee';
+                    }
+                    statusColor = '#f59e0b';
+                    
+                    actionsHTML = `
+                        <button class="btn-secondary" onclick="window.navigationService.checkStatus()">
+                            📋 Verificar Status
+                        </button>
+                    `;
+                }
+                // Verificar se depósito está pendente
+                else if (!contractData.deposited) {
                     statusText = '⏳ Aguardando Depósito';
                     statusColor = '#f59e0b';
                     
@@ -349,11 +528,21 @@ class NavigationService {
                         // Botões específicos para PAGADOR
                         actionsHTML = '';
                         
+                        // Verificar se algum marco foi liberado
+                        const firstMilestoneReleased = contractData.milestoneInfo && 
+                                                       contractData.milestoneInfo.length > 0 && 
+                                                       contractData.milestoneInfo[0].released;
+                        
+                        // Verificar se prazo venceu
+                        const deadlinePassed = contractData.deadline && new Date() > new Date(contractData.deadline);
+                        
                         // Verificar quais marcos ainda não foram executados
                         const pendingMilestones = [];
-                        for (let i = 0; i < contractData.milestoneExecuted.length; i++) {
-                            if (!contractData.milestoneExecuted[i]) {
-                                pendingMilestones.push(i);
+                        if (contractData.milestoneInfo && contractData.milestoneInfo.length > 0) {
+                            for (let i = 0; i < contractData.milestoneInfo.length; i++) {
+                                if (!contractData.milestoneInfo[i].released) {
+                                    pendingMilestones.push(i);
+                                }
                             }
                         }
                         
@@ -361,35 +550,58 @@ class NavigationService {
                         if (pendingMilestones.length > 0) {
                             pendingMilestones.forEach(milestoneIndex => {
                                 actionsHTML += `
-                                    <button class="btn-primary" onclick="window.navigationService.approveMilestone(${milestoneIndex})">
-                                        ✅ Aprovar Marco ${milestoneIndex + 1}
+                                    <button class="btn-primary" onclick="window.navigationService.releaseMilestone(${milestoneIndex})">
+                                        ✅ Liberar Marco ${milestoneIndex + 1}
                                     </button>
                                 `;
                             });
                         } else {
                             actionsHTML += `
                                 <div class="milestone-status">
-                                    <span class="status-text">✅ Todos os marcos foram executados</span>
+                                    <span class="status-text">✅ Todos os marcos foram liberados</span>
                                 </div>
                             `;
                         }
                         
+                        // Refund: Apenas ANTES do primeiro marco ser liberado
+                        if (!firstMilestoneReleased) {
+                            actionsHTML += `
+                                <button class="btn-danger" onclick="window.navigationService.refundContract()">
+                                    🔄 Refund (Recuperar 100%)
+                                </button>
+                            `;
+                        }
+                        
+                        // Propor Settlement: Sempre disponível
+                        actionsHTML += `
+                            <button class="btn-info" onclick="window.navigationService.proposeSettlement()">
+                                🤝 Propor Acordo (Settlement)
+                            </button>
+                        `;
+                        
+                        // Aprovar Cancelamento: Sempre disponível
                         actionsHTML += `
                             <button class="btn-warning" onclick="window.navigationService.approveCancel()">
                                 ❌ Aprovar Cancelamento
                             </button>
-                            <button class="btn-danger" onclick="window.navigationService.claimAfterDeadline()">
-                                ⏰ Reclamar Após Prazo
-                            </button>
                         `;
+                        
+                        // Reclamar Após Prazo: Apenas APÓS deadline
+                        if (deadlinePassed) {
+                            actionsHTML += `
+                                <button class="btn-danger" onclick="window.navigationService.claimAfterDeadline()">
+                                    ⏰ Reclamar Após Prazo
+                                </button>
+                            `;
+                        }
                     } else if (isPayee) {
                         // Botões específicos para RECEBEDOR
                         actionsHTML = `
                             <button class="btn-warning" onclick="window.navigationService.approveCancel()">
                                 ❌ Aprovar Cancelamento
                             </button>
-                            <button class="btn-danger" onclick="window.navigationService.refundContract()">
-                                🔄 Fazer Refund
+                            <button class="btn-info" onclick="window.navigationService.approveSettlement()">
+                                ✅ Aprovar Acordo (Settlement)
                             </button>
                         `;
                     }
@@ -476,7 +688,7 @@ class NavigationService {
                         <div class="error-icon">❌</div>
                         <h3>Erro ao carregar contratos</h3>
                         <p>${error.message}</p>
-                        <button class="btn-primary" onclick="window.navigationService.loadRealContractsForManage()">
+                        <button class="btn-primary" onclick="window.navigationService.loadStateBasedUI()">
                             🔄 Tentar Novamente
                         </button>
                     </div>
@@ -491,6 +703,185 @@ class NavigationService {
     /**
      * Ações do contrato
      */
+    
+    // Função para pagar taxa de plataforma
+    async payPlatformFee() {
+        try {
+            console.log('💳 Pagando taxa de plataforma...');
+            
+            const success = await window.realContractService.payPlatformFee();
+            if (success) {
+                alert('✅ Taxa de plataforma paga com sucesso!');
+                
+                // Aguardar propagação da transação
+                console.log('⏳ Aguardando propagação da transação...');
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                
+                // Recarregar interface usando novo sistema
+                await this.refreshCurrentPage();
+            } else {
+                alert('❌ Erro ao pagar taxa de plataforma');
+            }
+        } catch (error) {
+            console.error('❌ Erro ao pagar taxa:', error);
+            alert('❌ Erro ao pagar taxa: ' + error.message);
+        }
+    }
+
+    // Função para confirmar identidade do payer
+    async confirmPayer() {
+        try {
+            console.log('✅ Confirmando identidade do payer...');
+            
+            await window.realContractService.confirmPayer();
+            alert('✅ Identidade do payer confirmada!');
+            
+            // Aguardar um pouco para a transação ser propagada
+            console.log('⏳ Aguardando propagação da transação...');
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            
+            // Recarregar contratos para atualizar interface
+            await this.loadRealContracts();
+        } catch (error) {
+            console.error('❌ Erro ao confirmar payer:', error);
+            alert('❌ Erro ao confirmar payer: ' + error.message);
+        }
+    }
+
+    // Função para confirmar identidade do payee
+    async confirmPayee() {
+        try {
+            console.log('✅ Confirmando identidade do payee...');
+            
+            await window.realContractService.confirmPayee();
+            alert('✅ Identidade do payee confirmada!');
+            
+            // Aguardar propagação da transação
+            console.log('⏳ Aguardando propagação da transação...');
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            
+            // Recarregar contratos para atualizar interface
+            await this.loadRealContracts();
+        } catch (error) {
+            console.error('❌ Erro ao confirmar payee:', error);
+            alert('❌ Erro ao confirmar payee: ' + error.message);
+        }
+    }
+
+    // Função para liberar marco
+    async releaseMilestone(milestoneIndex) {
+        try {
+            console.log(`✅ Liberando marco ${milestoneIndex}...`);
+            
+            await window.realContractService.releaseMilestone(milestoneIndex);
+            alert(`✅ Marco ${milestoneIndex + 1} liberado com sucesso!`);
+            
+            // Aguardar propagação
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            await this.loadRealContracts();
+        } catch (error) {
+            console.error('❌ Erro ao liberar marco:', error);
+            alert('❌ Erro ao liberar marco: ' + error.message);
+        }
+    }
+
+    // Função para propor settlement
+    async proposeSettlement() {
+        try {
+            console.log('🤝 Propondo settlement...');
+            
+            const amount = prompt('Digite o valor em USDC que deseja pagar ao payee (acordo parcial):');
+            if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+                alert('❌ Valor inválido');
+                return;
+            }
+            
+            await window.realContractService.proposeSettlement(parseFloat(amount));
+            alert('✅ Settlement proposto com sucesso!');
+            
+            // Aguardar propagação
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            await this.loadRealContracts();
+        } catch (error) {
+            console.error('❌ Erro ao propor settlement:', error);
+            alert('❌ Erro ao propor settlement: ' + error.message);
+        }
+    }
+
+    // Função para aprovar settlement (payee)
+    async approveSettlement() {
+        try {
+            console.log('✅ Aprovando settlement...');
+            
+            await window.realContractService.approveSettlement();
+            alert('✅ Settlement aprovado com sucesso!');
+            
+            // Aguardar propagação
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            await this.loadRealContracts();
+        } catch (error) {
+            console.error('❌ Erro ao aprovar settlement:', error);
+            alert('❌ Erro ao aprovar settlement: ' + error.message);
+        }
+    }
+
+    // Função para fazer refund
+    async refundContract() {
+        try {
+            console.log('🔄 Fazendo refund...');
+            
+            const confirm = window.confirm('Tem certeza que deseja fazer refund? Você recuperará 100% do valor depositado.');
+            if (!confirm) return;
+            
+            await window.realContractService.refund();
+            alert('✅ Refund realizado com sucesso!');
+            
+            // Aguardar propagação
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            await this.loadRealContracts();
+        } catch (error) {
+            console.error('❌ Erro ao fazer refund:', error);
+            alert('❌ Erro ao fazer refund: ' + error.message);
+        }
+    }
+
+    // Função para aprovar cancelamento
+    async approveCancel() {
+        try {
+            console.log('❌ Aprovando cancelamento...');
+            
+            await window.realContractService.approveCancel();
+            alert('✅ Cancelamento aprovado! Se a outra parte também aprovar dentro de 1h, o contrato será cancelado.');
+            
+            // Aguardar propagação
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            await this.loadRealContracts();
+        } catch (error) {
+            console.error('❌ Erro ao aprovar cancelamento:', error);
+            alert('❌ Erro ao aprovar cancelamento: ' + error.message);
+        }
+    }
+
+    // Função para reclamar após prazo
+    async claimAfterDeadline() {
+        try {
+            console.log('⏰ Reclamando após prazo...');
+            
+            const confirm = window.confirm('Tem certeza que deseja reclamar o saldo restante após o prazo?');
+            if (!confirm) return;
+            
+            await window.realContractService.claimAfterDeadline();
+            alert('✅ Saldo reclamado com sucesso!');
+            
+            // Aguardar propagação
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            await this.loadRealContracts();
+        } catch (error) {
+            console.error('❌ Erro ao reclamar após prazo:', error);
+            alert('❌ Erro ao reclamar após prazo: ' + error.message);
+        }
+    }
+
     async depositContract() {
         try {
             console.log('💰 Iniciando depósito no contrato...');
@@ -559,8 +950,8 @@ class NavigationService {
             
             if (success) {
                 alert('✅ Depósito realizado com sucesso!');
-                // Recarregar interface
-                await this.loadRealContractsForManage();
+                // Recarregar interface usando novo sistema
+                await this.refreshCurrentPage();
             } else {
                 alert('❌ Erro ao realizar depósito');
             }
@@ -669,8 +1060,8 @@ class NavigationService {
             console.log(`✅ Aprovando marco ${milestoneIndex}...`);
             await window.realContractService.releaseMilestone(milestoneIndex);
             alert(`✅ Marco ${milestoneIndex + 1} aprovado com sucesso!`);
-            // Recarregar página
-            await this.loadRealContractsForManage();
+            // Recarregar página usando novo sistema
+            await this.refreshCurrentPage();
         } catch (error) {
             console.error('❌ Erro ao aprovar marco:', error);
             
@@ -688,8 +1079,8 @@ class NavigationService {
             console.log('❌ Aprovando cancelamento...');
             await window.realContractService.approveCancel();
             alert('✅ Cancelamento aprovado!');
-            // Recarregar página
-            await this.loadRealContractsForManage();
+            // Recarregar página usando novo sistema
+            await this.refreshCurrentPage();
         } catch (error) {
             console.error('❌ Erro ao aprovar cancelamento:', error);
             alert('❌ Erro ao aprovar cancelamento: ' + error.message);
@@ -701,8 +1092,8 @@ class NavigationService {
             console.log('🔄 Fazendo refund...');
             await window.realContractService.refund();
             alert('✅ Refund executado com sucesso!');
-            // Recarregar página
-            await this.loadRealContractsForManage();
+            // Recarregar página usando novo sistema
+            await this.refreshCurrentPage();
         } catch (error) {
             console.error('❌ Erro ao fazer refund:', error);
             alert('❌ Erro ao fazer refund: ' + error.message);
@@ -781,8 +1172,8 @@ class NavigationService {
             console.log('⏰ Reclamando após deadline...');
             await window.realContractService.claimAfterDeadline();
             alert('✅ Reclamação executada com sucesso!');
-            // Recarregar página
-            await this.loadRealContractsForManage();
+            // Recarregar página usando novo sistema
+            await this.refreshCurrentPage();
         } catch (error) {
             console.error('❌ Erro ao reclamar:', error);
             alert('❌ Erro ao reclamar: ' + error.message);
@@ -1280,6 +1671,12 @@ class NavigationService {
                 if (window.summaryCardsComponent) {
                     const stats = await window.realContractService.getStats();
                     console.log('📊 Estatísticas atualizadas:', stats);
+                }
+                
+                // Re-renderizar a página de gerenciamento se estivermos nela
+                if (this.currentPage === 'manage') {
+                    console.log('🔄 Re-renderizando página de gerenciamento...');
+                    await this.loadStateBasedUI();
                 }
             }
         } catch (error) {
