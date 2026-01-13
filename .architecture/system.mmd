@@ -1,0 +1,39 @@
+flowchart LR
+  %% System structure (code + dependencies)
+
+  subgraph FE["escrow-dapp/frontend (Static SPA)"]
+    FE_HTML["index.html"]
+    FE_MAIN["src/main.js"]
+    FE_NAV["src/services/navigation-service.js"]
+    FE_WALLET["src/services/wallet-service.js"]
+    FE_AI_SVC["src/services/ai-chat-service.js"]
+    FE_AI_UI["src/components/ai-chat-component.js"]
+    FE_CREATE["src/components/create-contract-form.js"]
+    FE_CONTRACTS["src/services/real-contract-service.js"]
+  end
+
+  subgraph AG["escrow-dapp/ai-agent (Flask API)"]
+    AG_SERVER["server.py"]
+  end
+
+  subgraph EXT["External"]
+    OPENAI["OpenAI API (chat.completions)"]
+    POLY["Polygon Network (Smart Contracts)"]
+    MM["MetaMask / window.ethereum"]
+  end
+
+  %% Frontend wiring
+  FE_HTML --> FE_MAIN
+  FE_MAIN --> FE_NAV
+  FE_MAIN --> FE_WALLET
+  FE_MAIN --> FE_AI_SVC
+  FE_AI_SVC --> FE_AI_UI
+  FE_CREATE --> FE_AI_SVC
+  FE_WALLET --> FE_CONTRACTS
+
+  %% External interactions
+  FE_WALLET --> MM
+  FE_CONTRACTS --> POLY
+  FE_AI_SVC --> AG_SERVER
+  AG_SERVER --> OPENAI
+

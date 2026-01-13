@@ -1,0 +1,33 @@
+sequenceDiagram
+  autonumber
+  actor U as Usuário (Browser)
+  participant FE as Frontend (Vercel / Static)
+  participant AG as AI Agent (Railway / Flask)
+  participant OA as OpenAI API
+  participant MM as MetaMask
+  participant PX as Polygon Network
+
+  U->>FE: Abre o site
+  FE-->>U: Renderiza UI + Chat Widget
+
+  U->>FE: Envia mensagem no chat
+  FE->>AG: POST /chat (messages)
+  AG->>OA: chat.completions (tools=auto)
+  OA-->>AG: Resposta (+ tool_calls opcionais)
+  AG-->>FE: completion JSON
+
+  alt tool_calls (ex: navegar / preencher formulário)
+    FE->>FE: executeToolCall() (DOM / NavigationService)
+    FE->>AG: POST /chat (tool results)
+    AG->>OA: chat.completions (continuação)
+    OA-->>AG: Resposta final
+    AG-->>FE: Texto final
+  end
+
+  U->>FE: Solicita conectar carteira
+  FE->>MM: eth_requestAccounts (janela de aprovação)
+  MM-->>FE: Conta conectada
+  Note over U,FE: Pré-requisito para criar contrato: MetaMask conectada + saldo de USDC + saldo de POL (gas)
+  FE->>PX: Chamadas via ethers.js (leitura/escrita)
+  PX-->>FE: Resultados/tx receipts
+

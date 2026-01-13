@@ -1,0 +1,24 @@
+flowchart LR
+  subgraph FE["frontend"]
+    FE_HTML["index.html"]
+    FE_AI_SVC["ai-chat-service.js"]
+    FE_AI_UI["ai-chat-component.js"]
+    FE_CREATE["create-contract-form.js"]
+    FE_WALLET["wallet-service.js"]
+    FE_REAL["real-contract-service.js"]
+  end
+
+  subgraph EXT["External"]
+    AG["AI Agent API (Railway)"]
+    MM["MetaMask"]
+    POLY["Polygon Network"]
+  end
+
+  FE_HTML --> FE_AI_SVC
+  FE_AI_SVC --> FE_AI_UI
+  FE_AI_SVC --> AG
+
+  FE_CREATE --> FE_AI_SVC
+  FE_WALLET --> MM
+  FE_REAL --> POLY
+

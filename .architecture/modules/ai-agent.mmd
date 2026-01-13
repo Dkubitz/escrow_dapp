@@ -1,0 +1,11 @@
+flowchart LR
+  subgraph AG["ai-agent"]
+    AG_SERVER["server.py\nFlask + OpenAI tools"]
+  end
+
+  subgraph EXT["External"]
+    OA["OpenAI API"]
+  end
+
+  AG_SERVER --> OA
+

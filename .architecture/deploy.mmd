@@ -1,0 +1,10 @@
+flowchart TB
+  U["Usuário (Browser)"] --> VERCEL["Vercel (Frontend Static)\nescrow-dapp/frontend"]
+  U --> RAILWAY["Railway (AI Agent API)\nescrow-dapp/ai-agent"]
+
+  VERCEL -->|HTTPS fetch /chat| RAILWAY
+  RAILWAY -->|HTTPS| OPENAI["OpenAI API"]
+
+  U -->|MetaMask| MM["MetaMask Extension"]
+  MM -->|RPC calls| POLY["Polygon Network\n(Smart Contracts)"]
+
