@@ -98,15 +98,17 @@
     <script src="src/components/create-contract-form.js"></script>
     <script src="src/components/state-based-ui-component.js"></script>
     <script src="src/components/state-based-ui-component-helpers.js"></script>
-    <script src="src/main.js"></script>
     
-    <!-- AI Chat Agent -->
-    <!-- Backend Railway configurado -->
+    <!-- AI Chat Agent - Backend Railway configurado ANTES dos scripts -->
     <script>
+        // Configurar URL do backend Railway ANTES de carregar os scripts
         window.AI_BACKEND_URL = 'https://escrowdapp-production.up.railway.app';
+        console.log('🌐 Backend URL configurada:', window.AI_BACKEND_URL);
     </script>
     <script src="src/services/ai-chat-service.js"></script>
     <script src="src/components/ai-chat-component.js"></script>
+    
+    <script src="src/main.js"></script>
     
     <!-- Sem JS: vídeo já contém o efeito ping-pong e roda em loop -->
     <script></script>
