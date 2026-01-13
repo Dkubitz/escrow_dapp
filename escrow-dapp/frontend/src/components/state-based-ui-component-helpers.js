@@ -92,7 +92,7 @@ StateBasedUIComponent.prototype.renderCancelInfo = function(contractData) {
         ">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h3 style="color: #ef4444; margin: 0; font-size: 16px; font-weight: 700;">
-                    ❌ Processo de Cancelamento
+                    Processo de Cancelamento
                 </h3>
                 <span style="
                     background: ${progressColor}20;
@@ -111,13 +111,19 @@ StateBasedUIComponent.prototype.renderCancelInfo = function(contractData) {
                 <div style="background: rgba(255,255,255,0.3); padding: 12px; border-radius: 8px; text-align: center;">
                     <div style="font-size: 11px; color: #888; margin-bottom: 4px;">Payer</div>
                     <div style="font-size: 24px;">
-                        ${contractData.cancelApprovedPayer ? '✅' : '⏳'}
+                        ${contractData.cancelApprovedPayer ? 
+                            '<div style="width: 20px; height: 20px; background: white; border-radius: 50%; margin: 0 auto; animation: pulse-dot 2s ease-in-out infinite;"></div>' : 
+                            '<div style="width: 20px; height: 20px; border: 2px solid white; border-radius: 50%; margin: 0 auto;"></div>'
+                        }
                     </div>
                 </div>
                 <div style="background: rgba(255,255,255,0.3); padding: 12px; border-radius: 8px; text-align: center;">
                     <div style="font-size: 11px; color: #888; margin-bottom: 4px;">Payee</div>
                     <div style="font-size: 24px;">
-                        ${contractData.cancelApprovedPayee ? '✅' : '⏳'}
+                        ${contractData.cancelApprovedPayee ? 
+                            '<div style="width: 20px; height: 20px; background: white; border-radius: 50%; margin: 0 auto; animation: pulse-dot 2s ease-in-out infinite;"></div>' : 
+                            '<div style="width: 20px; height: 20px; border: 2px solid white; border-radius: 50%; margin: 0 auto;"></div>'
+                        }
                     </div>
                 </div>
             </div>
@@ -146,8 +152,12 @@ StateBasedUIComponent.prototype.renderCancelInfo = function(contractData) {
                     font-size: 13px;
                     color: #d97706;
                     line-height: 1.5;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
                 ">
-                    ⏳ Aguardando aprovação ${contractData.cancelApprovedPayer && !contractData.cancelApprovedPayee ? 'do Payee' : contractData.cancelApprovedPayee && !contractData.cancelApprovedPayer ? 'do Payer' : 'de ambas as partes'}
+                    <div style="width: 16px; height: 16px; border: 2px solid #d97706; border-radius: 50%;"></div>
+                    Aguardando aprovação ${contractData.cancelApprovedPayer && !contractData.cancelApprovedPayee ? 'do Payee' : contractData.cancelApprovedPayee && !contractData.cancelApprovedPayer ? 'do Payer' : 'de ambas as partes'}
                 </div>
             `}
         </div>

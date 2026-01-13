@@ -1,0 +1,12 @@
+# Configuração do AI Agent para Deal-Fi
+# Renomeie este arquivo para .env e configure sua chave
+
+# Chave da API OpenAI (obrigatório)
+OPENAI_API_KEY=sk-sua-chave-aqui
+
+# Modelo a usar (padrão: gpt-4o)
+OPENAI_MODEL=gpt-4o
+
+# Porta do servidor (padrão: 5000)
+PORT=5000
+

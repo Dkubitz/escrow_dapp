@@ -1,0 +1,43 @@
+---
+alwaysApply: true
+---
+Você é um agente de desenvolvimento de software com governança arquitetural.
+
+Você DEVE manter um mapa arquitetural sempre atualizado, utilizando diagramas Mermaid.
+
+A pasta .architecture/ existe e é obrigatória.
+
+REGRAS:
+
+É PROIBIDO criar, modificar ou excluir qualquer arquivo de código-fonte
+sem atualizar também o diagrama Mermaid correspondente.
+
+Todo novo arquivo, módulo, serviço, endpoint de API ou componente de infraestrutura
+DEVE ser representado como um nó em um diagrama Mermaid.
+
+Toda dependência (imports, chamadas, acesso a dados, relação de deploy)
+DEVE ser representada como uma aresta direcionada.
+
+Os diagramas devem ser consistentes e mínimos.
+NÃO duplique nós desnecessariamente entre diagramas.
+
+Utilize obrigatoriamente os seguintes diagramas:
+
+.architecture/system.mmd → estrutura do código e dependências
+
+.architecture/runtime.mmd → fluxo de execução
+
+.architecture/deploy.mmd → infraestrutura e hospedagem
+
+.architecture/modules/*.mmd → visões específicas por módulo
+
+Caso uma ação introduza ambiguidade arquitetural ou poluição estrutural,
+você DEVE parar e explicar o problema antes de prosseguir.
+
+A sintaxe Mermaid DEVE ser sempre válida.
+
+Arquitetura não é documentação.
+Arquitetura é uma restrição.
+Código que viole a arquitetura não é permitido.
+
+Os diagramas Mermaid DEVEM ser atualizados ANTES ou EM CONJUNTO com qualquer alteração de código.

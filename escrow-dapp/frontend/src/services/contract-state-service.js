@@ -27,7 +27,7 @@ class ContractStateService {
             WAITING_PLATFORM_FEE: {
                 id: 'WAITING_PLATFORM_FEE',
                 phase: 'PRE_DEPOSIT',
-                title: '⏳ Aguardando Taxa de Plataforma',
+                title: 'Aguardando Taxa de Plataforma',
                 description: 'Taxa de 1 USDC deve ser paga',
                 canInteract: true,
                 actions: {
@@ -74,7 +74,7 @@ class ContractStateService {
             READY_FOR_DEPOSIT: {
                 id: 'READY_FOR_DEPOSIT',
                 phase: 'PRE_DEPOSIT',
-                title: '✅ Pronto para Depósito',
+                title: 'Pronto para Depósito',
                 description: 'Confirmações OK - Aguardando depósito do Payer (valor dinâmico)',
                 canInteract: true,
                 actions: {
@@ -100,7 +100,7 @@ class ContractStateService {
             ACTIVE_NO_MILESTONES_RELEASED: {
                 id: 'ACTIVE_NO_MILESTONES_RELEASED',
                 phase: 'ACTIVE',
-                title: '💰 Contrato Ativo',
+                title: 'Contrato Ativo',
                 description: 'Depósito realizado - Nenhum marco liberado',
                 canInteract: true,
                 milestonesReleased: 0,
@@ -124,7 +124,7 @@ class ContractStateService {
             ACTIVE_MILESTONE_1_RELEASED: {
                 id: 'ACTIVE_MILESTONE_1_RELEASED',
                 phase: 'ACTIVE',
-                title: '💰 Contrato Ativo',
+                title: 'Contrato Ativo',
                 description: 'Marco 1 liberado',
                 canInteract: true,
                 milestonesReleased: 1,
@@ -168,7 +168,7 @@ class ContractStateService {
             CANCEL_PARTIAL_PAYER: {
                 id: 'CANCEL_PARTIAL_PAYER',
                 phase: 'SPECIAL_PROCESS',
-                title: '🔄 Cancelamento em Progresso',
+                title: 'Cancelamento',
                 description: 'Payer aprovou cancelamento - Aguardando Payee',
                 canInteract: true,
                 actions: {
@@ -180,7 +180,7 @@ class ContractStateService {
             CANCEL_PARTIAL_PAYEE: {
                 id: 'CANCEL_PARTIAL_PAYEE',
                 phase: 'SPECIAL_PROCESS',
-                title: '🔄 Cancelamento em Progresso',
+                title: 'Cancelamento',
                 description: 'Payee aprovou cancelamento - Aguardando Payer',
                 canInteract: true,
                 actions: {
@@ -386,8 +386,8 @@ class ContractStateService {
         return {
             id: `ACTIVE_MILESTONE_${releasedCount}_RELEASED`,
             phase: 'ACTIVE',
-            title: '💰 Contrato Ativo',
-            description: `${releasedCount} marco(s) liberado(s) de ${contractData.totalMilestones}`,
+            title: 'Contrato Ativo',
+            description: '',
             canInteract: true,
             milestonesReleased: releasedCount,
             availableActions: this.getMilestoneActions(nextMilestone, releasedCount),
@@ -420,7 +420,7 @@ class ContractStateService {
                 },
                 {
                     id: 'viewDetails',
-                    label: '🔍 Ver Detalhes',
+                    label: 'Ver Detalhes',
                     type: 'secondary'
                 }
             ];
@@ -449,7 +449,7 @@ class ContractStateService {
                 },
                 {
                     id: 'viewDetails',
-                    label: '🔍 Ver Detalhes',
+                    label: 'Ver Detalhes',
                     type: 'secondary'
                 }
             ];
@@ -538,7 +538,7 @@ class ContractStateService {
             },
             viewDetails: {
                 id: 'viewDetails',
-                label: '🔍 Ver Detalhes',
+                label: 'Ver Detalhes',
                 type: 'secondary'
             }
         };

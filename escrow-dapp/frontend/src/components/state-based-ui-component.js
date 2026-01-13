@@ -66,6 +66,7 @@ class StateBasedUIComponent {
                         margin-bottom: 25px;
                         padding-bottom: 20px;
                         border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+                        gap: 20px;
                     ">
                         <h3 style="color: #1c1c1e; font-size: 20px; font-weight: 700; margin: 0;">
                             ${state.title}
@@ -100,7 +101,7 @@ class StateBasedUIComponent {
                         text-align: center;
                     ">
                         <strong style="color: #667eea; font-size: 13px;">
-                            👤 Seu Papel: ${state.userRole === 'PAYER' ? 'Pagador (Payer)' : state.userRole === 'PAYEE' ? 'Recebedor (Payee)' : 'Observador'}
+                            Seu Papel: ${state.userRole === 'PAYER' ? 'Pagador (Payer)' : state.userRole === 'PAYEE' ? 'Recebedor (Payee)' : 'Observador'}
                         </strong>
                     </div>
                     
@@ -147,7 +148,7 @@ class StateBasedUIComponent {
                     border: 1px solid rgba(255, 255, 255, 0.2);
                 ">
                     <span class="label" style="color: rgba(28, 28, 30, 0.7); font-size: 13px; font-weight: 600;">Saldo Restante:</span>
-                    <span class="value" style="color: #10b981; font-size: 16px; font-weight: 700;">${contractData.remainingAmount || '0'} USDC</span>
+                    <span class="value" style="color: #1c1c1e; font-size: 16px; font-weight: 700;">${contractData.remainingAmount || '0'} USDC</span>
                 </div>
                 
                 <div class="info-row" style="
@@ -225,12 +226,12 @@ class StateBasedUIComponent {
                 margin: 20px 0;
             ">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 style="color: #667eea; margin: 0; font-size: 16px; font-weight: 700;">
-                        🎯 Progresso dos Marcos
+                    <h3 style="color: white; margin: 0; font-size: 16px; font-weight: 700;">
+                        <span class="pulse-dot"></span>Progresso dos Marcos
                     </h3>
                     <span style="
                         background: #667eea20;
-                        color: #667eea;
+                        color: white;
                         padding: 6px 12px;
                         border-radius: 12px;
                         font-size: 12px;
@@ -288,7 +289,11 @@ class StateBasedUIComponent {
             // Label especial para release milestone
             let label = action.label;
             if (action.id === 'releaseMilestone' && action.milestone !== undefined) {
-                label = `✅ Liberar Marco ${action.milestone + 1}`;
+                label = `<span class="pulse-dot"></span>Liberar Marco ${action.milestone + 1}`;
+            } else if (action.id === 'approveCancel') {
+                label = `<span class="pulse-dot"></span>Aprovar Cancelamento`;
+            } else if (action.id === 'proposeSettlement') {
+                label = `<span class="pulse-dot"></span>Propor Acordo`;
             }
             
             return `
@@ -379,8 +384,10 @@ class StateBasedUIComponent {
         console.log(`🎯 Ação disparada: ${actionId}`, { milestone, state });
         
         try {
-            // Mostrar notificação de início
-            this.showNotification('⏳ Executando ação... Confirme na MetaMask', 'info');
+            // Mostrar notificação de início apenas para ações que precisam da MetaMask
+            if (actionId !== 'viewDetails') {
+                this.showNotification('⏳ Executando ação... Confirme na MetaMask', 'info');
+            }
             switch (actionId) {
                 case 'payPlatformFee':
                     await window.realContractService.payPlatformFee();
@@ -411,26 +418,38 @@ class StateBasedUIComponent {
                     break;
                 case 'releaseMilestone':
                     await window.realContractService.releaseMilestone(parseInt(milestone));
+                    console.log(`✅ Ação ${actionId} executada com sucesso!`);
+                    this.showNotification('✅ Transação enviada! Aguardando confirmação...', 'success');
                     break;
                 case 'refund':
                     if (confirm('Tem certeza que deseja executar refund? Isso recuperará 100% do valor depositado.')) {
                         await window.realContractService.refund();
+                        console.log(`✅ Ação ${actionId} executada com sucesso!`);
+                        this.showNotification('✅ Transação enviada! Aguardando confirmação...', 'success');
                     }
                     break;
                 case 'approveCancel':
                     await window.realContractService.approveCancel();
+                    console.log(`✅ Ação ${actionId} executada com sucesso!`);
+                    this.showNotification('✅ Transação enviada! Aguardando confirmação...', 'success');
                     break;
                 case 'proposeSettlement':
                     const settlementAmount = prompt('Digite o valor do settlement (USDC):');
                     if (settlementAmount && !isNaN(settlementAmount)) {
                         await window.realContractService.proposeSettlement(parseFloat(settlementAmount));
+                        console.log(`✅ Ação ${actionId} executada com sucesso!`);
+                        this.showNotification('✅ Transação enviada! Aguardando confirmação...', 'success');
                     }
                     break;
                 case 'approveSettlement':
                     await window.realContractService.approveSettlement();
+                    console.log(`✅ Ação ${actionId} executada com sucesso!`);
+                    this.showNotification('✅ Transação enviada! Aguardando confirmação...', 'success');
                     break;
                 case 'claimAfterDeadline':
                     await window.realContractService.claimAfterDeadline();
+                    console.log(`✅ Ação ${actionId} executada com sucesso!`);
+                    this.showNotification('✅ Transação enviada! Aguardando confirmação...', 'success');
                     break;
                 case 'viewDetails':
                     this.showDetailedView();
@@ -439,20 +458,18 @@ class StateBasedUIComponent {
                     console.warn('Ação não mapeada:', actionId);
             }
             
-            // Mostrar mensagem de sucesso
-            console.log(`✅ Ação ${actionId} executada com sucesso!`);
-            this.showNotification('✅ Transação enviada! Aguardando confirmação...', 'success');
-            
-            // Forçar atualização imediata (polling vai pegar mudanças depois)
-            console.log('⏳ Aguardando propagação da transação (2 segundos)...');
-            setTimeout(async () => {
-                if (window.contractPollingService) {
-                    // Resetar estado para forçar detecção de mudança
-                    window.contractPollingService.resetState();
-                    // Verificar imediatamente
-                    await window.contractPollingService.checkForUpdates();
-                }
-            }, 2000);
+            // Forçar atualização imediata apenas para ações que fazem transações
+            if (actionId !== 'viewDetails') {
+                console.log('⏳ Aguardando propagação da transação (2 segundos)...');
+                setTimeout(async () => {
+                    if (window.contractPollingService) {
+                        // Resetar estado para forçar detecção de mudança
+                        window.contractPollingService.resetState();
+                        // Verificar imediatamente
+                        await window.contractPollingService.checkForUpdates();
+                    }
+                }, 2000);
+            }
             
         } catch (error) {
             console.error(`❌ Erro ao executar ação ${actionId}:`, error);

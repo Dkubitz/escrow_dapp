@@ -25,73 +25,36 @@ class CreateContractForm {
 
                 <div class="contract-form-container">
                     <form class="contract-form" id="createContractForm" onsubmit="window.createContractForm.handleSubmit(event)">
-                        <!-- Timestamp de confirmação -->
-                        <div style="position: absolute; top: 10px; right: 10px; font-size: 10px; color: #888; background: rgba(255,255,255,0.8); padding: 2px 5px; border-radius: 3px;">
-                            21/10/2025 - 07:17
-                        </div>
-                        
                         <!-- Informações do Recebedor -->
                         <div class="form-section">
-                            <h3>👤 Informações do Recebedor</h3>
+                            <h3>Informações do Recebedor</h3>
                             <div class="form-group">
                                 <label>Endereço da Carteira do Recebedor *</label>
                                 <input type="text" id="payeeAddress" placeholder="0x..." required>
-                                <small>O recebedor precisa conectar sua MetaMask e ter USDC para receber pagamentos</small>
-                            </div>
-                            <div class="form-group">
-                                <label>Email do Recebedor (opcional)</label>
-                                <input type="email" id="payeeEmail" placeholder="recebedor@email.com">
-                                <small>Para notificações por email</small>
-                            </div>
-                        </div>
-
-                        <!-- Verificação de USDC -->
-                        <div class="form-section">
-                            <h3>💰 Verificação de USDC</h3>
-                            <div class="usdc-check">
-                                <div class="usdc-status" id="usdcStatus">
-                                    <span class="status-icon">⏳</span>
-                                    <span class="status-text">Verificando saldo de USDC...</span>
-                                </div>
-                                        <div class="usdc-actions">
-                                            <button type="button" class="btn-secondary" onclick="window.createContractForm.checkUSDCBalance()">
-                                                🔄 Verificar Saldo USDC
-                                            </button>
-                                </div>
-                                <div class="usdc-info">
-                                    <p><strong>Importante:</strong> Você precisa ter USDC na sua carteira para executar este contrato.</p>
-                                    <p>O sistema pagará todas as taxas de gas, mas o valor do contrato será transferido do seu saldo USDC.</p>
-                                </div>
+                                <small>Endereço da carteira que receberá os pagamentos</small>
                             </div>
                         </div>
 
                         <!-- Detalhes do Contrato -->
                         <div class="form-section">
-                            <h3>📄 Detalhes do Contrato</h3>
+                            <h3>Detalhes do Contrato</h3>
                             
                             <div class="form-group">
-                                <label>Descrição do Projeto *</label>
-                                <textarea id="description" placeholder="Descreva o projeto, serviço ou produto..." rows="4" required></textarea>
+                                <label>Valor Total (USDC) *</label>
+                                <input type="number" id="amount" placeholder="100" min="1" step="0.01" required value="100">
+                                <small>Valor total do contrato em USDC</small>
                             </div>
 
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>Valor Total (USDC) *</label>
-                                            <input type="number" id="amount" placeholder="100" min="1" step="0.01" required value="100">
-                                            <small>Mínimo: 1 USDC - Exemplo: 100 USDC</small>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Prazo (dias) *</label>
-                                    <input type="number" id="duration" placeholder="30" min="1" max="365" required>
-                                    <small>Máximo: 365 dias</small>
-                                </div>
+                            <div class="form-group">
+                                <label>Prazo (dias) *</label>
+                                <input type="number" id="duration" placeholder="30" min="1" max="365" required>
+                                <small>Prazo máximo para execução do contrato</small>
                             </div>
                         </div>
 
                         <!-- Marcos do Projeto -->
                         <div class="form-section">
-                            <h3>🎯 Marcos do Projeto</h3>
+                            <h3>Marcos do Projeto</h3>
                             <p class="section-description">
                                 Divida o pagamento em marcos. Cada marco representa uma entrega específica.
                             </p>
@@ -107,14 +70,10 @@ class CreateContractForm {
 
                         <!-- Resumo do Deploy -->
                         <div class="payment-summary">
-                            <h3>🔗 Resumo do Deploy</h3>
+                            <h3>Resumo do Deploy</h3>
                             <div class="summary-item">
                                 <span>Taxa de Plataforma:</span>
                                 <span class="price">1 USDC</span>
-                            </div>
-                            <div class="summary-item">
-                                <span>Gas para Deploy:</span>
-                                <span class="price">~0.05 POL</span>
                             </div>
                             <div class="summary-item">
                                 <span>Valor do Contrato:</span>
@@ -124,9 +83,6 @@ class CreateContractForm {
                                 <span>Rede:</span>
                                 <span>Polygon</span>
                             </div>
-                            <div class="summary-info">
-                                ℹ️ Você pagará 1 USDC de taxa de plataforma + gas em POL para criar o contrato. O valor do contrato será depositado separadamente.
-                            </div>
                         </div>
 
                         <!-- Botões de Ação -->
@@ -135,7 +91,7 @@ class CreateContractForm {
                                 Cancelar
                             </button>
                             <button type="submit" class="btn-primary">
-                                🚀 Deploy Smart Contract
+                                Deploy Smart Contract
                             </button>
                         </div>
                     </form>
@@ -171,16 +127,6 @@ class CreateContractForm {
                         onchange="window.createContractForm.updateMilestone(${index}, this.value)"
                     >
                     <small>Valor: <span id="milestone-value-${index}">-</span> USDC</small>
-                </div>
-                
-                <div class="form-group">
-                    <label>Descrição da Entrega</label>
-                    <input 
-                        type="text" 
-                        placeholder="Ex: Fundação concluída, Design aprovado, etc."
-                        value="${milestone.description || ''}"
-                        onchange="window.createContractForm.updateMilestoneDescription(${index}, this.value)"
-                    >
                 </div>
             </div>
         `).join('');
@@ -232,9 +178,6 @@ class CreateContractForm {
         this.updateMilestoneValues();
     }
 
-    updateMilestoneDescription(index, value) {
-        this.milestones[index].description = value;
-    }
 
     updateMilestoneValues() {
         const amount = parseFloat(document.getElementById('amount')?.value) || 0;
@@ -301,12 +244,10 @@ class CreateContractForm {
         const formData = {
             payerAddress: window.walletService.account, // Endereço do pagador (conectado)
             payeeAddress: document.getElementById('payeeAddress').value,
-            payeeEmail: document.getElementById('payeeEmail').value,
-            description: document.getElementById('description').value,
             amount: parseFloat(document.getElementById('amount').value),
             duration: parseInt(document.getElementById('duration').value) * 86400, // Converter dias para segundos
             milestones: this.milestones.map(m => m.percentage),
-                    usdcTokenAddress: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359' // USDC.e na Polygon
+            usdcTokenAddress: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359' // USDC.e na Polygon
         };
 
         try {
@@ -631,13 +572,10 @@ class CreateContractForm {
                     </div>
                     
                     <div class="success-actions">
-                        <button onclick="window.createContractForm.payPlatformFee('${contractAddress}')" class="btn-action btn-primary-action">
-                            💳 Pagar Taxa (1 USDC)
-                        </button>
                         <button onclick="window.open('https://polygonscan.com/address/${contractAddress}', '_blank')" class="btn-action btn-secondary-action">
                             🔍 Ver no PolygonScan
                         </button>
-                        <button onclick="window.createContractForm.viewDeployedContract('${contractAddress}')" class="btn-action btn-secondary-action">
+                        <button onclick="window.createContractForm.viewDeployedContract('${contractAddress}')" class="btn-action btn-primary-action">
                             📋 Ver Contrato
                         </button>
                     </div>
