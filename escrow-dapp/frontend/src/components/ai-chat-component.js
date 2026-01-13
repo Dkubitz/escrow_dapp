@@ -53,9 +53,7 @@ class AIChatComponent {
                 <div class="ai-chat-messages" id="ai-chat-messages">
                     <div class="ai-message bot">
                         <div class="message-content">
-                            Olá! Sou o assistente do Deal-Fi. Posso ajudá-lo a navegar pela plataforma. 
-                            <br><br>
-                            Experimente: <em>"Me leve para criar um contrato"</em>
+                            Olá! Sou o assistente do Deal-Fi. Posso ajudá-lo a navegar pela plataforma.
                         </div>
                     </div>
                 </div>
