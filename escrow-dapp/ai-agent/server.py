@@ -469,8 +469,10 @@ if __name__ == "__main__":
 -------------------------------------------
   Modelo: {MODEL:<30} 
   Porta:  {port:<30} 
-  URL:    http://localhost:{port:<14} 
+  URL:    http://0.0.0.0:{port:<14} 
 ===========================================
     """)
-    app.run(debug=True, port=port)
+    # Railway precisa escutar em 0.0.0.0 para aceitar conexões externas
+    # debug=False em produção
+    app.run(host="0.0.0.0", port=port, debug=False)
 
