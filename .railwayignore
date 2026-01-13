@@ -1,0 +1,8 @@
+# Railway Ignore - Deploy apenas quando há mudanças em escrow-dapp/ai-agent/
+# Este arquivo faz o Railway ignorar mudanças em outras pastas
+
+# Ignorar tudo EXCETO escrow-dapp/ai-agent/
+/*
+!escrow-dapp/
+escrow-dapp/*
+!escrow-dapp/ai-agent/
