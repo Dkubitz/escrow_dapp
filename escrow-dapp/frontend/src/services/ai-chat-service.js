@@ -365,25 +365,41 @@ class AIChatService {
 
     /**
      * Função auxiliar para obter informações dos marcos
+     * Usa o array interno do createContractForm como fonte de verdade
      */
     getMilestonesInfo() {
         const milestones = [];
-        let index = 0;
         
-        while (true) {
-            const input = document.getElementById(`milestone-${index}`);
-            if (!input) break;
+        if (window.createContractForm && window.createContractForm.milestones) {
+            // Usar array interno como fonte de verdade
+            const amount = parseFloat(document.getElementById('amount')?.value) || 0;
             
-            const percentage = parseInt(input.value) || 0;
-            const valueEl = document.getElementById(`milestone-value-${index}`);
-            const value = valueEl?.textContent || '0';
-            
-            milestones.push({
-                index,
-                percentage,
-                value: value.replace(' USDC', '')
+            window.createContractForm.milestones.forEach((milestone, index) => {
+                const value = (amount * milestone.percentage / 100).toFixed(2);
+                milestones.push({
+                    index,
+                    percentage: milestone.percentage,
+                    value: value
+                });
             });
-            index++;
+        } else {
+            // Fallback: ler do DOM se createContractForm não estiver disponível
+            let index = 0;
+            while (true) {
+                const input = document.getElementById(`milestone-${index}`);
+                if (!input) break;
+                
+                const percentage = parseInt(input.value) || 0;
+                const valueEl = document.getElementById(`milestone-value-${index}`);
+                const value = valueEl?.textContent || '0';
+                
+                milestones.push({
+                    index,
+                    percentage,
+                    value: value.replace(' USDC', '')
+                });
+                index++;
+            }
         }
 
         const total = milestones.reduce((sum, m) => sum + m.percentage, 0);

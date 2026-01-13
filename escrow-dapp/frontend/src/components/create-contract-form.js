@@ -174,6 +174,13 @@ class CreateContractForm {
 
     updateMilestone(index, value) {
         this.milestones[index].percentage = parseInt(value) || 0;
+        
+        // Atualizar o valor do input no DOM também
+        const input = document.getElementById(`milestone-${index}`);
+        if (input) {
+            input.value = this.milestones[index].percentage;
+        }
+        
         this.validateMilestones();
         this.updateMilestoneValues();
     }
